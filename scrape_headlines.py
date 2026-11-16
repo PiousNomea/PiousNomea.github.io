@@ -1,9 +1,10 @@
 """Fetch the latest Dimsum Daily headlines and save them to headlines.json.
 
 Tries three sources in order, so a site redesign doesn't break the widget:
-  1. The RSS feed            (most reliable)
-  2. The WordPress posts API  (backup)
-  3. Scraping the homepage    (last resort)
+  1. The RSS feed             (most reliable)
+  2. The WordPress posts API   (backup)
+  3. Scraping the homepage     (backup)
+  4. Google News' feed of Dimsum Daily stories (if the site blocks GitHub)
 
 If every source fails, the old headlines.json is left untouched and the
 script exits with an error so the failure shows up in the Actions tab.
@@ -40,23 +41,48 @@ def clean(text, limit=None):
     return text
 
 
-def from_rss():
-    r = requests.get(f"{SITE}/feed/", headers=HEADERS, timeout=20)
-    r.raise_for_status()
-    root = ET.fromstring(r.content)
+def parse_rss(content, strip_suffix=None):
+    root = ET.fromstring(content)
     items = []
     for item in root.iter("item"):
+        title = clean(item.findtext("title"))
+        if strip_suffix and title.endswith(strip_suffix):
+            title = title[: -len(strip_suffix)].strip()
         try:
             date = parsedate_to_datetime(item.findtext("pubDate"))
             date = date.astimezone(timezone.utc).isoformat()
         except (TypeError, ValueError):
             date = None
         items.append({
-            "title": clean(item.findtext("title")),
+            "title": title,
             "link": (item.findtext("link") or "").strip(),
             "date": date,
-            "summary": clean(item.findtext("description"), 140),
+            "summary": "" if strip_suffix else clean(item.findtext("description"), 140),
         })
+    return items
+
+
+def from_rss():
+    r = requests.get(f"{SITE}/feed/", headers=HEADERS, timeout=20)
+    r.raise_for_status()
+    return parse_rss(r.content)
+
+
+def from_google_news():
+    """Google News' public feed of Dimsum Daily stories.
+
+    Used when dimsumdaily.hk refuses requests from GitHub's servers.
+    Links go through Google News and redirect to the original article.
+    """
+    r = requests.get(
+        "https://news.google.com/rss/search",
+        params={"q": "site:dimsumdaily.hk", "hl": "en-HK", "gl": "HK", "ceid": "HK:en"},
+        headers=HEADERS,
+        timeout=20,
+    )
+    r.raise_for_status()
+    items = parse_rss(r.content, strip_suffix="- Dimsum Daily")
+    items.sort(key=lambda i: i["date"] or "", reverse=True)
     return items
 
 
@@ -90,7 +116,7 @@ def from_homepage():
 
 
 def main():
-    for source in (from_rss, from_wp_api, from_homepage):
+    for source in (from_rss, from_wp_api, from_homepage, from_google_news):
         try:
             items = [i for i in source() if i["title"] and i["link"]][:MAX_ITEMS]
         except Exception as exc:  # try the next source
