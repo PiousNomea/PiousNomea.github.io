@@ -19,7 +19,7 @@
   const PED_SPEED = 1.3;                  // phone zombies shuffle towards you
   const HIT_Z = 1.35, HIT_X = 0.7;
   const START_SPEED = 6, MAX_SPEED = 22;
-  const MILESTONE = 1000, MILESTONE_BOOST = 1.5;   // +1.5 m/s every 1000 m
+  const MILESTONE = 200, MILESTONE_BOOST = 0.6;    // +0.6 m/s every 200 m
   const TYPHOON_TIME = 6, TYPHOON_PED_BOOST = 3.5;  // seconds; extra walking speed in a storm
   const PICKUP_CHANCE = 0.12;                       // per row of pedestrians
 
@@ -752,12 +752,12 @@
     time += dt;
     const moving = state === 'playing' || state === 'ready';
     if (state === 'playing') {
-      // Gentle ramp for the first 1000 m, then a speed boost every 1000 m
+      // Gentle ramp for the first 1000 m, plus a speed boost every 200 m
       level = Math.floor(dist / MILESTONE);
       speed = Math.min(MAX_SPEED, Math.min(11, START_SPEED + dist * 0.005) + level * MILESTONE_BOOST);
       dist += speed * dt * (typhoonT > 0 ? 2 : 1);   // typhoon = double distance
       const newLevel = Math.floor(dist / MILESTONE);
-      if (newLevel > level) { bannerText = `${newLevel * MILESTONE} m`; bannerT = 2.2; }
+      if (newLevel > level) { bannerText = `${newLevel * MILESTONE} m`; bannerT = 1.6; }
 
       if (typhoonT > 0) typhoonT = Math.max(0, typhoonT - dt);
       typhoonK += ((typhoonT > 0 ? 1 : 0) - typhoonK) * (1 - Math.exp(-dt * (typhoonT > 0 ? 5 : 2)));
@@ -842,7 +842,7 @@
     if (bannerT > 0) {
       ctx.save();
       ctx.globalAlpha = Math.min(1, bannerT / 0.4);
-      const pop = 1 + Math.max(0, bannerT - 1.9) * 1.5;
+      const pop = 1 + Math.max(0, bannerT - 1.3) * 1.5;
       ctx.translate(W / 2, 168); ctx.scale(pop, pop);
       ctx.fillStyle = 'rgba(5,0,15,0.6)';
       ctx.fillRect(-W / 2, -22, W, 70);
