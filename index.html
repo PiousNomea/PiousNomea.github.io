@@ -203,6 +203,18 @@
     }
   }
 
+  /* 低頭族 Dash game */
+  .pz-canvas {
+    display: block; width: 100%; max-width: 420px; height: auto;
+    aspect-ratio: 360 / 540; margin: 10px auto 8px;
+    border: 2px solid #ff2a2a; border-radius: 8px; background: #07041a;
+    box-shadow: 0 0 18px rgba(255, 0, 60, 0.45);
+    touch-action: manipulation; cursor: pointer; outline: none;
+    -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none;
+  }
+  .pz-canvas:focus-visible { box-shadow: 0 0 0 3px #00ffff, 0 0 18px rgba(255, 0, 60, 0.45); }
+  .pz-hint { margin: 0; text-align: center; color: #9aa; font-size: 0.85em; }
+
   /* Dimsum Daily headlines widget */
   .news-widget {
     background: rgba(0, 0, 0, 0.78);
@@ -275,6 +287,13 @@
       <li class="news-skeleton"></li><li class="news-skeleton"></li><li class="news-skeleton"></li>
     </ul>
     <a class="news-more" href="https://www.dimsumdaily.hk/" target="_blank" rel="noopener">More on Dimsum Daily →</a>
+  </section>
+
+  <section class="content-div pz-section" aria-labelledby="pzTitle">
+    <p class="FirstPara" id="pzTitle">Can you survive a walk through Hong Kong?</p>
+    <canvas id="pzCanvas" class="pz-canvas" width="360" height="540" tabindex="0"
+      aria-label="低頭族 Dash game. Use the left and right arrow keys, or tap the left or right side, to dodge people looking at their phones."></canvas>
+    <p class="pz-hint">← → or A / D to dodge · On mobile, tap the left or right side</p>
   </section>
 
   <div class="content-div">
@@ -561,5 +580,6 @@
     // Initial draw for "Press to Start"
     gameLoop();
   </script>
+  <script src="games/phone-zombies.js" defer></script>
 </body>
 </html>
