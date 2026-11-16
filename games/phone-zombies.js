@@ -18,7 +18,10 @@
   const Z_FAR = 60, Z_CLIP = 0.4;
   const PED_SPEED = 1.3;                  // phone zombies shuffle towards you
   const HIT_Z = 1.35, HIT_X = 0.7;
-  const START_SPEED = 6, MAX_SPEED = 16;
+  const START_SPEED = 6, MAX_SPEED = 22;
+  const MILESTONE = 1000, MILESTONE_BOOST = 1.5;   // +1.5 m/s every 1000 m
+  const TYPHOON_TIME = 6, TYPHOON_PED_BOOST = 3.5;  // seconds; extra walking speed in a storm
+  const PICKUP_CHANCE = 0.12;                       // per row of pedestrians
 
   const PIXEL = "'Press Start 2P', monospace";
   const CJK = "'PingFang HK','Noto Sans HK','Noto Sans CJK TC','Microsoft JhengHei',sans-serif";
@@ -30,8 +33,8 @@
   const lerp = (a, b, t) => a + (b - a) * t;
   const laneX = (i) => (i - (LANES - 1) / 2) * LANE_W;
 
-  let camX = laneX(1), bob = 0;
-  const sx = (x, z) => W / 2 + (x - camX) * F / z;
+  let camX = laneX(1), bob = 0, sway = 0;
+  const sx = (x, z) => W / 2 + sway + (x - camX) * F / z;
   const sy = (y, z) => HORIZON + bob + (CAM_H - y) * F / z;
 
   // ---------- Palettes ----------
@@ -45,6 +48,8 @@
   const HAIR = ['#141414', '#1f1a17', '#2b211b', '#3a2a20'];
   const MASKS = ['#bfe3f5', '#f4f6f8', '#202020', '#f6c9d6', '#9fd8c4', '#bfe3f5', '#f4f6f8'];
   const PHONES = ['#111111', '#e9e9e9', '#f2b8c6', '#6b8cff', '#ffd34d', '#2a2a2a'];
+  const UMBRELLAS = ['#1f6feb', '#e63946', '#2a9d8f', '#f4a261', '#1a1a1a', '#8338ec',
+    'rgba(225,238,255,0.55)', 'rgba(225,238,255,0.55)'];   // clear umbrellas are very HK
 
   const MESSAGES = [
     "She didn't look up. She never looks up.",
@@ -57,6 +62,13 @@
     'She was 3 seconds from finishing her drama episode.',
     'He apologised to his phone, not to you.',
     'Mong Kok claims another victim.',
+  ];
+  const TYPHOON_MESSAGES = [
+    'Signal 8 and you still went out?',
+    'Her umbrella survived. You did not.',
+    'Blown into an auntie at 120 km/h.',
+    'The Observatory did warn you.',
+    "He didn't look up. Not even for a typhoon.",
   ];
 
   // ---------- Scenery ----------
@@ -136,6 +148,9 @@
       shoes: kind === 'student' ? '#eeeeee' : '#111111',
       bag: kind === 'auntie' ? 'stripes' : kind === 'student' ? 'backpack' : chance(0.3) ? 'tote' : null,
       tilt: rand(-0.12, 0.12),
+      umbrella: pick(UMBRELLAS),
+      insideOut: chance(0.15),
+      seed: rand(0, 100),
       phase: rand(0, Math.PI * 2),
       checked: false,
     };
@@ -169,6 +184,8 @@
 
     const k = p.h / 1.7;
     ctx.scale(k, k);
+    const uk = typhoonK;   // 0 = calm, 1 = full typhoon (umbrella open)
+    if (uk > 0.01) ctx.rotate((Math.sin(time * 7 + p.seed) * 0.05 - 0.05) * uk);   // battling the wind
     const sw = Math.sin(p.phase);
     const by = -Math.abs(Math.cos(p.phase)) * 0.02;
 
@@ -210,24 +227,28 @@
       ctx.fillRect(0.11, -1.42 + by, 0.05, 0.38);
     }
 
-    // Arms bent up, holding the phone at chest height
+    // Arms: left hand always on the phone; in a typhoon the right hand
+    // leaves the phone and goes up to hold the umbrella.
+    const rex = lerp(0.21, 0.33, uk), rey = lerp(-1.1, -1.3, uk) + by;
+    const rhx = lerp(0.05, 0.27, uk), rhy = lerp(-1.18, -1.52, uk) + by;
+    const phx = -0.05 - 0.03 * uk;
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     for (const [w, c] of [[0.12, 'rgba(0,0,0,0.35)'], [0.09, p.coat]]) {
       ctx.strokeStyle = c; ctx.lineWidth = w;
       ctx.beginPath();
-      ctx.moveTo(-0.2, -1.36 + by); ctx.lineTo(-0.21, -1.1 + by); ctx.lineTo(-0.05, -1.18 + by);
-      ctx.moveTo(0.2, -1.36 + by); ctx.lineTo(0.21, -1.1 + by); ctx.lineTo(0.05, -1.18 + by);
+      ctx.moveTo(-0.2, -1.36 + by); ctx.lineTo(-0.21, -1.1 + by); ctx.lineTo(phx, -1.18 + by);
+      ctx.moveTo(0.2, -1.36 + by); ctx.lineTo(rex, rey); ctx.lineTo(rhx, rhy);
       ctx.stroke();
     }
 
     // Phone (we see the back of it) and hands
     ctx.fillStyle = p.phone;
-    rr(-0.05, -1.3 + by, 0.1, 0.16, 0.015);
+    rr(phx, -1.3 + by, 0.1, 0.16, 0.015);
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ellipse(-0.025, -1.27 + by, 0.012, 0.012);
+    ellipse(phx + 0.025, -1.27 + by, 0.012, 0.012);
     ctx.fillStyle = p.skin;
-    ellipse(-0.05, -1.18 + by, 0.035, 0.035);
-    ellipse(0.05, -1.18 + by, 0.035, 0.035);
+    ellipse(phx, -1.18 + by, 0.035, 0.035);
+    if (uk < 0.5) ellipse(rhx, rhy, 0.035, 0.035);
 
     // Neck
     ctx.fillStyle = p.skin;
@@ -292,7 +313,141 @@
       ctx.beginPath(); ctx.moveTo(-0.015, 0.075); ctx.lineTo(0.015, 0.075); ctx.stroke();
     }
     ctx.restore();
+
+    if (uk > 0.05) {
+      drawUmbrella(p, rhx, rhy, uk);
+      ctx.fillStyle = p.skin;
+      ellipse(rhx, rhy, 0.035, 0.035);   // hand gripping the handle
+    }
     ctx.restore();
+  }
+
+  function drawUmbrella(p, hx, hy, k) {
+    ctx.save();
+    ctx.translate(hx, hy);
+    ctx.rotate(-0.35 + Math.sin(time * 9 + p.seed) * 0.12);   // tilted into the wind and shaking
+    const len = 0.55, r = 0.52 * k;
+
+    ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = 0.022; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(0, 0.06); ctx.lineTo(0, -len); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0.03, 0.06, 0.03, Math.PI, 0, true); ctx.stroke();   // J handle
+
+    ctx.translate(0, -len);
+    ctx.fillStyle = p.umbrella;
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 0.01;
+    ctx.beginPath();
+    if (p.insideOut && k > 0.6) {
+      // Blown inside out, as umbrellas do in a signal 8
+      ctx.moveTo(-r, -0.32 * k);
+      ctx.quadraticCurveTo(0, 0.12, r, -0.32 * k);
+      ctx.quadraticCurveTo(0, -0.04, -r, -0.32 * k);
+      ctx.fill();
+      ctx.beginPath();
+      for (const t of [-1, -0.5, 0.5, 1]) { ctx.moveTo(0, 0.02); ctx.lineTo(t * r, -0.3 * k); }
+      ctx.stroke();
+    } else {
+      ctx.ellipse(0, 0, r, r * 0.62, 0, Math.PI, 0);
+      const n = 4, seg = (2 * r) / n;
+      for (let i = 0; i < n; i++) {
+        const x2 = r - (i + 1) * seg;
+        ctx.quadraticCurveTo(x2 + seg / 2, -0.06 * k, x2, 0);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      for (let i = 0; i <= n; i++) { ctx.moveTo(0, -r * 0.62); ctx.lineTo(-r + i * seg, 0); }
+      ctx.stroke();
+      ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = 0.02;
+      ctx.beginPath(); ctx.moveTo(0, -r * 0.62); ctx.lineTo(0, -r * 0.62 - 0.06); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // ---------- Typhoon power-up ----------
+  let pickups = [];
+
+  function drawPickup(pk) {
+    const s = F / pk.z;
+    const lift = 1.0 + Math.sin(time * 3 + pk.z) * 0.08;
+    const px = sx(pk.x, pk.z), py = sy(lift, pk.z);
+    if (px < -s || px > W + s || py > H + s) return;
+    ctx.save();
+    ctx.globalAlpha = clamp((Z_FAR + 1 - pk.z) / 8, 0, 1);
+    ctx.translate(px, py);
+    ctx.scale(s, s);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ellipse(0, lift, 0.25, 0.05);                         // shadow on the road
+    ctx.fillStyle = `rgba(0,229,255,${0.15 + 0.1 * Math.sin(time * 6)})`;
+    ellipse(0, 0, 0.45, 0.45);                            // pulsing glow
+    ctx.fillStyle = '#0b1a3a';
+    ellipse(0, 0, 0.3, 0.3);
+    ctx.strokeStyle = '#00e5ff'; ctx.lineWidth = 0.035;
+    ctx.beginPath(); ctx.arc(0, 0, 0.3, 0, Math.PI * 2); ctx.stroke();
+    ctx.save();                                           // spinning cyclone
+    ctx.rotate(-time * 5);
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 0.045; ctx.lineCap = 'round';
+    for (const a of [0, Math.PI]) { ctx.beginPath(); ctx.arc(0, 0, 0.17, a, a + 2.1); ctx.stroke(); }
+    ctx.fillStyle = '#ffffff';
+    ellipse(0, 0, 0.05, 0.05);
+    ctx.restore();
+    ctx.fillStyle = '#ffd400';                            // the No. 8 signal triangle
+    ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 0.02;
+    ctx.beginPath(); ctx.moveTo(0, -0.58); ctx.lineTo(0.14, -0.36); ctx.lineTo(-0.14, -0.36); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+
+  // ---------- Storm effects ----------
+  const WIND = -260;
+  const rain = Array.from({ length: 150 }, () => ({
+    x: rand(0, W + 150), y: rand(-H, H), len: rand(10, 22), spd: rand(700, 1000),
+  }));
+  const debris = Array.from({ length: 7 }, () => ({
+    x: rand(0, W), y: rand(0, H * 0.8), vx: rand(-420, -250), vy: rand(-40, 60),
+    r: rand(0, 6), vr: rand(-8, 8), size: rand(3, 6), c: pick(['#5f8f3a', '#8a6a3a', '#d8d2c0', '#7aa04a']),
+  }));
+  let flashA = 0;
+
+  function updateStorm(dt) {
+    if (typhoonK < 0.01) return;
+    for (const d of rain) {
+      d.y += d.spd * dt; d.x += WIND * dt;
+      if (d.y > H || d.x < -30) { d.y = rand(-40, 0); d.x = rand(0, W + 150); }
+    }
+    for (const d of debris) {
+      d.x += d.vx * dt; d.y += d.vy * dt + Math.sin(time * 5 + d.r) * 40 * dt; d.r += d.vr * dt;
+      if (d.x < -20) { d.x = W + 20; d.y = rand(0, H * 0.8); }
+    }
+  }
+
+  function drawStorm() {
+    const k = typhoonK;
+    if (k > 0.01) {
+      ctx.fillStyle = `rgba(10,20,40,${0.38 * k})`;
+      ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = `rgba(190,210,255,${0.55 * k})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (const d of rain) {
+        ctx.moveTo(d.x, d.y);
+        ctx.lineTo(d.x - (WIND / d.spd) * d.len, d.y - d.len);
+      }
+      ctx.stroke();
+      if (k > 0.3) {
+        for (const d of debris) {
+          ctx.save();
+          ctx.globalAlpha = k;
+          ctx.translate(d.x, d.y); ctx.rotate(d.r);
+          ctx.fillStyle = d.c;
+          ellipse(0, 0, d.size, d.size * 0.45);
+          ctx.restore();
+        }
+      }
+    }
+    if (flashA > 0.01) {
+      ctx.fillStyle = `rgba(230,240,255,${flashA})`;
+      ctx.fillRect(0, 0, W, H);
+    }
   }
 
   // ---------- Drawing the street ----------
@@ -415,7 +570,8 @@
     const top = sy(s.y + s.h, s.z), bot = sy(s.y, s.z);
     if (r < 0 || l > W || bot < 0) return;
     const sc = F / s.z;
-    const on = !(s.flicker && Math.sin(time * 19 + s.seed) > 0.8);
+    const flickery = s.flicker || (typhoonK > 0.5 && s.seed > 55);   // storms knock the signs about
+    const on = !(flickery && Math.sin(time * 19 + s.seed) > 0.8 - typhoonK * 0.5);
 
     ctx.fillStyle = '#12060f';
     ctx.fillRect(l, top, r - l, bot - top);
@@ -544,10 +700,13 @@
   let dist = 0, speed = START_SPEED, best = loadBest(), newBest = false;
   let targetLane = 1, rowTimer = 0.3, walkPhase = 0, crashT = 0, overT = 0, time = 0;
   let crash = null, msg = '';
+  let typhoonT = 0, typhoonK = 0, level = 0, bannerT = 0, bannerText = '';
 
   function start() {
     peds = peds.filter((p) => p.z > 20);
+    pickups = [];
     dist = 0; speed = START_SPEED; newBest = false; crash = null;
+    typhoonT = 0; typhoonK = 0; flashA = 0; level = 0; bannerT = 0;
     rowTimer = 0.8;
     state = 'playing';
     canvas.style.touchAction = 'none';
@@ -564,6 +723,11 @@
     let lanes = [0, 1, 2, 3].sort(() => Math.random() - 0.5);
     if (!playing) lanes = lanes.filter((l) => l !== targetLane);
     lanes.slice(0, n).forEach((l) => peds.push(makePed(l, Z_FAR + rand(-1.5, 1.5))));
+    // Sometimes a typhoon signal floats in one of the free lanes
+    if (playing && dist > 150 && typhoonT <= 0 && !pickups.length && chance(PICKUP_CHANCE)) {
+      const lane = pick(lanes.slice(n));
+      pickups.push({ isPickup: true, lane, x: laneX(lane), z: Z_FAR, checked: false });
+    }
     let gap = playing ? lerp(1.15, 0.55, diff) * rand(0.85, 1.25) : rand(1.2, 2.2);
     if (n === 3) gap = Math.max(gap, 0.85);
     rowTimer = gap;
@@ -574,7 +738,7 @@
     const score = Math.floor(dist);
     newBest = score > best;
     if (newBest) { best = score; saveBest(best); }
-    msg = pick(MESSAGES);
+    msg = pick(typhoonT > 0 ? TYPHOON_MESSAGES : MESSAGES);
     crash = {
       cracks: makeCracks(),
       phone: { x: sx(p.x, p.z), y: sy(1.2 * p.h / 1.7, p.z), vx: rand(-150, 150), vy: -650,
@@ -588,9 +752,23 @@
     time += dt;
     const moving = state === 'playing' || state === 'ready';
     if (state === 'playing') {
-      speed = Math.min(MAX_SPEED, START_SPEED + dist * 0.009);
-      dist += speed * dt;
+      // Gentle ramp for the first 1000 m, then a speed boost every 1000 m
+      level = Math.floor(dist / MILESTONE);
+      speed = Math.min(MAX_SPEED, Math.min(11, START_SPEED + dist * 0.005) + level * MILESTONE_BOOST);
+      dist += speed * dt * (typhoonT > 0 ? 2 : 1);   // typhoon = double distance
+      const newLevel = Math.floor(dist / MILESTONE);
+      if (newLevel > level) { bannerText = `${newLevel * MILESTONE} m`; bannerT = 2.2; }
+
+      if (typhoonT > 0) typhoonT = Math.max(0, typhoonT - dt);
+      typhoonK += ((typhoonT > 0 ? 1 : 0) - typhoonK) * (1 - Math.exp(-dt * (typhoonT > 0 ? 5 : 2)));
+      if (typhoonK < 0.005) typhoonK = 0;
+      if (typhoonK > 0.6 && Math.random() < dt * 0.45) flashA = rand(0.4, 0.7);   // lightning
     }
+    flashA = Math.max(0, flashA - dt * 2.5);
+    bannerT = Math.max(0, bannerT - dt);
+    updateStorm(dt);
+    sway = Math.sin(time * 2.3) * 4 * typhoonK;
+
     const v = state === 'playing' ? speed : state === 'ready' ? 2.2 : 0;
     moveScenery(v * dt);
     walkPhase += dt * (moving ? 4 + v * 0.55 : 0);
@@ -598,13 +776,21 @@
     if (moving) {
       rowTimer -= dt;
       if (rowTimer <= 0) spawnRow();
-      for (const p of peds) { p.z -= (v + PED_SPEED) * dt; p.phase += dt * 7.5; }
+      const pedV = PED_SPEED + TYPHOON_PED_BOOST * typhoonK;   // they rush in a storm
+      for (const p of peds) { p.z -= (v + pedV) * dt; p.phase += dt * 7.5 * (1 + typhoonK * 0.7); }
+      for (const pk of pickups) pk.z -= v * dt;
     }
 
     camX += (laneX(targetLane) - camX) * (1 - Math.exp(-dt * 16));
     bob = moving ? Math.sin(walkPhase) * (state === 'playing' ? 2.2 : 1) : bob * 0.9;
 
     if (state === 'playing') {
+      for (const pk of pickups) {
+        if (!pk.checked && pk.z <= HIT_Z) {
+          pk.checked = true;
+          if (Math.abs(pk.x - camX) < 0.8) { typhoonT = TYPHOON_TIME; flashA = 0.85; pk.z = 0; }
+        }
+      }
       for (const p of peds) {
         if (!p.checked && p.z <= HIT_Z) {
           p.checked = true;
@@ -612,7 +798,10 @@
         }
       }
     }
-    if (state !== 'crash' && state !== 'over') peds = peds.filter((p) => p.z > 0.7);
+    if (state !== 'crash' && state !== 'over') {
+      peds = peds.filter((p) => p.z > 0.7);
+      pickups = pickups.filter((pk) => pk.z > 0.7);
+    }
 
     if (state === 'crash') {
       crashT += dt;
@@ -639,6 +828,30 @@
 
   const blink = () => Math.sin(time * 6) > -0.2;
 
+  function drawBanners() {
+    if (typhoonT > 0) {
+      const shake = Math.sin(time * 40) * 1.5;
+      glowText('八號風球！', W / 2 + shake, 62, `900 30px ${CJK}`, '#ffd400', 14);
+      glowText('TYPHOON · 2× DISTANCE', W / 2, 92, `9px ${PIXEL}`, '#ffffff', 6);
+      const bw = W - 140, frac = typhoonT / TYPHOON_TIME;
+      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.fillRect((W - bw) / 2, 104, bw, 5);
+      ctx.fillStyle = '#ffd400';
+      ctx.fillRect((W - bw) / 2, 104, bw * frac, 5);
+    }
+    if (bannerT > 0) {
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, bannerT / 0.4);
+      const pop = 1 + Math.max(0, bannerT - 1.9) * 1.5;
+      ctx.translate(W / 2, 168); ctx.scale(pop, pop);
+      ctx.fillStyle = 'rgba(5,0,15,0.6)';
+      ctx.fillRect(-W / 2, -22, W, 70);
+      glowText(bannerText, 0, 0, `20px ${PIXEL}`, '#00ffff', 12);
+      glowText('SPEED UP!', 0, 30, `14px ${PIXEL}`, '#ffe600', 10);
+      ctx.restore();
+    }
+  }
+
   function drawReady() {
     ctx.fillStyle = 'rgba(5,0,15,0.5)';
     ctx.fillRect(0, 0, W, H);
@@ -647,7 +860,8 @@
     wrapText("Dodge Hong Kong's phone zombies", W / 2, 245, W - 40, 20, 'bold 16px Arial, sans-serif', '#ffffff');
     wrapText('← → or A / D to sidestep', W / 2, 300, W - 40, 20, '14px Arial, sans-serif', '#c9c3d6');
     wrapText('On a phone? Tap the left or right side', W / 2, 322, W - 40, 20, '14px Arial, sans-serif', '#c9c3d6');
-    if (best > 0) glowText(`BEST ${best} m`, W / 2, 370, `12px ${PIXEL}`, '#ffe600', 6);
+    wrapText('Grab a typhoon signal for 2× distance… if you dare', W / 2, 352, W - 50, 18, 'bold 13px Arial, sans-serif', '#ffd400');
+    if (best > 0) glowText(`BEST ${best} m`, W / 2, 395, `12px ${PIXEL}`, '#ffe600', 6);
     if (blink()) glowText('TAP OR PRESS SPACE', W / 2, H - 70, `12px ${PIXEL}`, '#ffffff', 8);
   }
 
@@ -688,8 +902,10 @@
     drawGround();
     buildings.slice().sort((a, b) => b.z1 - a.z1).forEach(drawWall);
     for (let i = signs.length - 1; i >= 0; i--) drawSign(signs[i]);
-    peds.slice().sort((a, b) => b.z - a.z).forEach(drawPed);
+    peds.concat(pickups).sort((a, b) => b.z - a.z)
+      .forEach((o) => (o.isPickup ? drawPickup(o) : drawPed(o)));
     ctx.restore();
+    drawStorm();
 
     if (state === 'crash') {
       ctx.fillStyle = `rgba(255,255,255,${Math.max(0, 0.85 - crashT * 3)})`;
@@ -701,6 +917,7 @@
     }
 
     if (state === 'playing' || state === 'crash' || state === 'paused') drawHUD();
+    if (state === 'playing') drawBanners();
     if (state === 'ready') drawReady();
     else if (state === 'paused') drawPaused();
     else if (state === 'over') drawOver();
