@@ -189,7 +189,7 @@
 
   /* Responsive Design */
   @media (max-width: 600px) {
-    .MainHeader { font-size: 連結1.8em; }
+    .MainHeader { font-size: 1.8em; }
     h3.MainHeader { font-size: 1em; }
     img { width: 100%; } 
     .video-wrapper { width: 100%; }
@@ -201,6 +201,57 @@
       width: 80%;
       max-width: 640px;
     }
+  }
+
+  /* Dimsum Daily headlines widget */
+  .news-widget {
+    background: rgba(0, 0, 0, 0.78);
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+  }
+  .news-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; flex-wrap: wrap; margin-bottom: 10px;
+  }
+  .news-title {
+    margin: 0; color: #ff4040; font-family: 'Press Start 2P', cursive;
+    font-size: 0.8em; line-height: 1.6;
+    text-shadow: 0 0 6px rgba(255, 64, 64, 0.8);
+  }
+  .live-dot {
+    display: inline-block; width: 8px; height: 8px; margin-right: 8px;
+    border-radius: 50%; background: #ff2a2a; vertical-align: middle;
+    box-shadow: 0 0 8px #ff2a2a; animation: blink 1.4s infinite;
+  }
+  @keyframes blink { 50% { opacity: 0.25; } }
+  .news-updated { color: #8fdfdf; font-family: 'Orbitron', sans-serif; font-size: 0.7em; }
+  .news-list { list-style: none; margin: 0; padding: 0; }
+  .news-list li { border-top: 1px solid rgba(255, 0, 0, 0.25); }
+  .news-list li:first-child { border-top: none; }
+  .news-list a {
+    display: block; padding: 10px 6px; color: #fff; text-decoration: none;
+    border-radius: 4px; transition: background 0.2s;
+  }
+  .news-list a:hover, .news-list a:focus-visible {
+    background: rgba(0, 255, 255, 0.08); outline: none;
+  }
+  .news-list .headline { display: block; font-weight: bold; line-height: 1.35; }
+  .news-list a:hover .headline { color: #00ffff; text-shadow: 0 0 6px rgba(0, 255, 255, 0.6); }
+  .news-list .meta { display: block; margin-top: 3px; color: #9aa; font-size: 0.8em; }
+  .news-more {
+    display: block; margin-top: 10px; text-align: center; color: #00ffff;
+    font-family: 'Orbitron', sans-serif; font-size: 0.85em; text-decoration: none;
+  }
+  .news-more:hover { text-decoration: underline; }
+  .news-skeleton {
+    height: 14px; margin: 14px 6px; border-radius: 3px;
+    background: linear-gradient(90deg, #222 25%, #333 50%, #222 75%);
+    background-size: 200% 100%; animation: shimmer 1.2s infinite linear;
+  }
+  @keyframes shimmer { to { background-position: -200% 0; } }
+  .news-empty { color: #ccc; text-align: center; padding: 10px; }
+  @media (prefers-reduced-motion: reduce) {
+    .live-dot, .news-skeleton { animation: none; }
   }
 </style>
 </head>
@@ -214,6 +265,17 @@
   <h3 title="You are hovering over my header" class="MainHeader">
     Hong Kong Hacks, Adventures, and Lifestyle Tips
   </h3>
+
+  <section class="content-div news-widget" aria-labelledby="newsTitle">
+    <div class="news-head">
+      <h2 class="news-title" id="newsTitle"><span class="live-dot"></span>HK Headlines</h2>
+      <span class="news-updated" id="newsUpdated"></span>
+    </div>
+    <ul class="news-list" id="newsList" aria-live="polite">
+      <li class="news-skeleton"></li><li class="news-skeleton"></li><li class="news-skeleton"></li>
+    </ul>
+    <a class="news-more" href="https://www.dimsumdaily.hk/" target="_blank" rel="noopener">More on Dimsum Daily →</a>
+  </section>
 
   <div class="content-div">
     <p class="FirstPara">Here is an AI-generated image I made:</p>
@@ -242,6 +304,60 @@
   </div>
 
   <script>
+    // Dimsum Daily headlines widget (data refreshed by a GitHub Action)
+    (function () {
+      const list = document.getElementById('newsList');
+      const updatedEl = document.getElementById('newsUpdated');
+      const SHOW = 6;
+
+      function timeAgo(iso) {
+        const t = Date.parse(iso);
+        if (isNaN(t)) return '';
+        const mins = Math.max(0, Math.round((Date.now() - t) / 60000));
+        if (mins < 60) return mins <= 1 ? 'just now' : mins + ' min ago';
+        const hrs = Math.round(mins / 60);
+        if (hrs < 24) return hrs + (hrs === 1 ? ' hour ago' : ' hours ago');
+        const days = Math.round(hrs / 24);
+        return days + (days === 1 ? ' day ago' : ' days ago');
+      }
+
+      function render(data) {
+        const items = (data.items || []).slice(0, SHOW);
+        list.innerHTML = '';
+        if (!items.length) throw new Error('no items');
+        for (const item of items) {
+          const li = document.createElement('li');
+          const a = document.createElement('a');
+          a.href = item.link;
+          a.target = '_blank';
+          a.rel = 'noopener';
+          const title = document.createElement('span');
+          title.className = 'headline';
+          title.textContent = item.title;
+          a.appendChild(title);
+          const meta = item.date ? timeAgo(item.date) : '';
+          if (meta) {
+            const m = document.createElement('span');
+            m.className = 'meta';
+            m.textContent = meta;
+            a.appendChild(m);
+          }
+          li.appendChild(a);
+          list.appendChild(li);
+        }
+        if (data.updated) updatedEl.textContent = 'Updated ' + timeAgo(data.updated);
+      }
+
+      function showEmpty() {
+        list.innerHTML = '<li class="news-empty">Headlines are on their way. Check back soon.</li>';
+      }
+
+      fetch('headlines.json?v=' + Date.now())
+        .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(render)
+        .catch(showEmpty);
+    })();
+
     // Mystify-inspired screensaver animation
     const backgroundCanvas = document.getElementById('backgroundCanvas');
     const ctx = backgroundCanvas.getContext('2d');
