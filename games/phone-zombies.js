@@ -19,6 +19,7 @@
   const PED_SPEED = 1.3;                  // phone zombies shuffle towards you
   const HIT_Z = 1.35, HIT_X = 0.7;
   const START_SPEED = 6, MAX_SPEED = 22;
+  const RESTART_DELAY = 0.45;                       // seconds before a tap can restart after a crash
   const MILESTONE = 200, MILESTONE_BOOST = 0.6;    // +0.6 m/s every 200 m
   const TYPHOON_TIME = 6, TYPHOON_PED_BOOST = 3.5;  // seconds; extra walking speed in a storm
   const PICKUP_CHANCE = 0.12;                       // per row of pedestrians
@@ -606,28 +607,30 @@
   }
 
   // ---------- Text helpers ----------
-  function glowText(text, x, y, font, color, blur) {
-    ctx.save();
-    ctx.font = font;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.shadowColor = color; ctx.shadowBlur = blur;
-    ctx.fillStyle = color;
-    ctx.fillText(text, x, y);
-    ctx.restore();
+  // These take an optional context so they can draw on the share card too.
+  function glowText(text, x, y, font, color, blur, g = ctx) {
+    g.save();
+    g.font = font;
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.shadowColor = color; g.shadowBlur = blur;
+    g.fillStyle = color;
+    g.fillText(text, x, y);
+    g.restore();
   }
 
-  function wrapText(text, x, y, maxW, lineH, font, color) {
-    ctx.font = font;
-    ctx.fillStyle = color;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  function wrapText(text, x, y, maxW, lineH, font, color, g = ctx) {
+    g.font = font;
+    g.fillStyle = color;
+    g.textAlign = 'center'; g.textBaseline = 'middle';
     const words = text.split(' ');
     let line = '', yy = y;
     for (const w of words) {
       const test = line ? line + ' ' + w : w;
-      if (ctx.measureText(test).width > maxW && line) { ctx.fillText(line, x, yy); line = w; yy += lineH; }
+      if (g.measureText(test).width > maxW && line) { g.fillText(line, x, yy); line = w; yy += lineH; }
       else line = test;
     }
-    ctx.fillText(line, x, yy);
+    g.fillText(line, x, yy);
+    return yy;
   }
 
   // ---------- Crash effects ----------
@@ -656,20 +659,20 @@
     return { cx, cy, rays, rings };
   }
 
-  function drawCracks(c, alpha) {
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-    ctx.lineWidth = 1.2;
-    ctx.beginPath();
+  function drawCracks(c, alpha, g = ctx) {
+    g.save();
+    g.globalAlpha = alpha;
+    g.strokeStyle = 'rgba(255,255,255,0.9)';
+    g.lineWidth = 1.2;
+    g.beginPath();
     for (const pts of c.rays.concat(c.rings)) {
-      ctx.moveTo(pts[0][0], pts[0][1]);
-      for (const [x, y] of pts.slice(1)) ctx.lineTo(x, y);
+      g.moveTo(pts[0][0], pts[0][1]);
+      for (const [x, y] of pts.slice(1)) g.lineTo(x, y);
     }
-    ctx.stroke();
-    ctx.fillStyle = 'rgba(255,255,255,0.8)';
-    ellipse(c.cx, c.cy, 5, 5);
-    ctx.restore();
+    g.stroke();
+    g.fillStyle = 'rgba(255,255,255,0.8)';
+    g.beginPath(); g.ellipse(c.cx, c.cy, 5, 5, 0, 0, Math.PI * 2); g.fill();
+    g.restore();
   }
 
   function drawFlyingPhone(ph) {
@@ -692,6 +695,186 @@
     ctx.restore();
   }
 
+  // ---------- Sound: everything synthesised with Web Audio, no audio files ----------
+  const audio = (() => {
+    let ac = null, master, musicBus, sfxBus, noiseBuf, windGain, windFilter, rainGain;
+    let muted = false;
+    try { muted = localStorage.getItem('pzMuted') === '1'; } catch (e) { /* storage blocked */ }
+    let musicOn = false, step = 0, nextStep = 0, tempo = 128, leadVol = 1;
+
+    const midi = (n) => 440 * Math.pow(2, (n - 69) / 12);
+
+    function init() {
+      if (ac) { if (ac.state === 'suspended') ac.resume(); return; }
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      ac = new AC();
+      master = ac.createGain(); master.gain.value = muted ? 0 : 0.8; master.connect(ac.destination);
+      musicBus = ac.createGain(); musicBus.gain.value = 0.22; musicBus.connect(master);
+      sfxBus = ac.createGain(); sfxBus.gain.value = 0.6; sfxBus.connect(master);
+      noiseBuf = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+
+      // Storm ambience: looping wind and rain, silent until a typhoon
+      const wind = ac.createBufferSource(); wind.buffer = noiseBuf; wind.loop = true;
+      windFilter = ac.createBiquadFilter(); windFilter.type = 'bandpass'; windFilter.frequency.value = 400; windFilter.Q.value = 0.8;
+      windGain = ac.createGain(); windGain.gain.value = 0;
+      wind.connect(windFilter); windFilter.connect(windGain); windGain.connect(sfxBus); wind.start();
+      const rain = ac.createBufferSource(); rain.buffer = noiseBuf; rain.loop = true;
+      const rf = ac.createBiquadFilter(); rf.type = 'highpass'; rf.frequency.value = 2500;
+      rainGain = ac.createGain(); rainGain.gain.value = 0;
+      rain.connect(rf); rf.connect(rainGain); rainGain.connect(sfxBus); rain.start();
+
+      // iOS only allows speech after a tap, so unlock it now
+      try { if ('speechSynthesis' in window) speechSynthesis.speak(new SpeechSynthesisUtterance('')); } catch (e) { /* no speech */ }
+    }
+
+    function tone(freq, t, dur, type, vol, bus, slideTo) {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = type || 'square';
+      o.frequency.setValueAtTime(freq, t);
+      if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol, t + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(bus || sfxBus);
+      o.start(t); o.stop(t + dur + 0.03);
+    }
+
+    function noise(t, dur, vol, type, freq, bus, q) {
+      const s = ac.createBufferSource(); s.buffer = noiseBuf;
+      const f = ac.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q || 0.7;
+      const g = ac.createGain();
+      g.gain.setValueAtTime(vol, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      s.connect(f); f.connect(g); g.connect(bus || sfxBus);
+      s.start(t, Math.random()); s.stop(t + dur + 0.03);
+      return f;
+    }
+
+    // Original theme: an upbeat pentatonic tune in eighth notes (semitones above C4)
+    const MEL_A = [12, null, 9, 7, 9, null, 12, 14, 16, null, 14, 12, 9, null, 7, null,
+      9, null, 7, 4, 7, null, 9, 12, 9, null, 7, 4, 2, null, 0, null];
+    const MEL_B = [7, 9, 12, null, 12, 14, 16, null, 19, null, 16, 14, 12, null, 14, null,
+      16, 14, 12, 9, 12, null, 9, 7, 9, null, 12, null, 7, null, null, null];
+    const BASS = [36, 33, 29, 31];   // C, A, F, G
+
+    function scheduleStep(t) {
+      const eighth = 60 / tempo / 2;
+      const mel = Math.floor(step / 32) % 2 === 0 ? MEL_A : MEL_B;
+      const n = mel[step % 32];
+      if (n !== null) tone(midi(60 + n), t, eighth * 0.9, 'square', 0.14 * leadVol, musicBus);
+      const beat = step % 8;
+      const root = BASS[Math.floor(step / 8) % 4];
+      if (beat % 2 === 0) tone(midi(root + (beat % 4 === 2 ? 12 : 0)), t, eighth * 1.6, 'triangle', 0.35, musicBus);
+      if (beat === 0 || beat === 4) tone(150, t, 0.12, 'sine', 0.5, musicBus, 45);             // kick
+      if (beat === 2 || beat === 6) noise(t, 0.09, 0.25, 'bandpass', 1800, musicBus, 0.6);     // snare
+      if (beat % 2 === 1) noise(t, 0.03, 0.1, 'highpass', 7000, musicBus);                      // hi-hat
+      if (step % 64 === 0) {                                                                    // station-style chime
+        tone(midi(88), t, 0.5, 'sine', 0.16, musicBus);
+        tone(midi(84), t + 0.25, 0.8, 'sine', 0.16, musicBus);
+      }
+      step++;
+    }
+
+    function tick(speed, storm) {
+      if (!ac) return;
+      const now = ac.currentTime;
+      if (musicOn) {
+        tempo = 128 + (speed - 6) * 3;          // music speeds up with you
+        leadVol = storm > 0.5 ? 0.45 : 1;
+        if (nextStep < now) nextStep = now + 0.05;
+        while (nextStep < now + 0.15) { scheduleStep(nextStep); nextStep += 60 / tempo / 2; }
+      }
+      windGain.gain.setTargetAtTime(storm * 0.55, now, 0.25);
+      rainGain.gain.setTargetAtTime(storm * 0.16, now, 0.25);
+      windFilter.frequency.setTargetAtTime(320 + Math.sin(now * 1.7) * 160 + storm * 200, now, 0.1);
+    }
+
+    const sfx = {
+      lane() {
+        if (!ac) return;
+        const t = ac.currentTime;
+        const f = noise(t, 0.13, 0.22, 'bandpass', 700, sfxBus, 1.3);
+        f.frequency.exponentialRampToValueAtTime(2600, t + 0.12);
+      },
+      doors() {   // MTR-style door-closing beeps at every speed-up
+        if (!ac) return;
+        const t = ac.currentTime;
+        for (let i = 0; i < 5; i++) tone(1950, t + i * 0.16, 0.09, 'sine', 0.3);
+      },
+      pickup() {
+        if (!ac) return;
+        const t = ac.currentTime;
+        [0, 4, 7, 12, 16].forEach((n, i) => tone(midi(72 + n), t + i * 0.06, 0.18, 'square', 0.18));
+        noise(t, 1.0, 0.35, 'lowpass', 500);
+      },
+      thunder() {
+        if (!ac) return;
+        const t = ac.currentTime + rand(0.1, 0.4);
+        noise(t, 1.8, 0.9, 'lowpass', 160);
+        noise(t, 0.3, 0.4, 'lowpass', 900);
+      },
+      crash() {
+        if (!ac) return;
+        const t = ac.currentTime;
+        tone(130, t, 0.35, 'sine', 0.9, sfxBus, 40);                     // thud
+        noise(t, 0.15, 0.55, 'highpass', 2500);                         // screen cracks
+        for (let i = 0; i < 6; i++) noise(t + 0.04 + i * 0.045, 0.05, 0.25, 'highpass', 5000);
+        [67, 66, 65].forEach((n, i) => tone(midi(n), t + 0.55 + i * 0.3, 0.28, 'triangle', 0.3));
+        tone(midi(64), t + 1.45, 0.9, 'triangle', 0.3, sfxBus, midi(62));   // sad trombone-ish ending
+      },
+    };
+
+    // Cantonese lines use the device's Cantonese voice when it has one
+    let hkVoice = null;
+    function findVoice() {
+      try {
+        const vs = speechSynthesis.getVoices();
+        hkVoice = vs.find((v) => /^(zh[-_]HK|yue)/i.test(v.lang)) ||
+          vs.find((v) => /cantonese|粵|廣東/i.test(v.name)) || null;
+      } catch (e) { hkVoice = null; }
+    }
+    if ('speechSynthesis' in window) {
+      findVoice();
+      if (speechSynthesis.addEventListener) speechSynthesis.addEventListener('voiceschanged', findVoice);
+    }
+
+    function say(text, pitch) {
+      if (muted || !hkVoice) return;
+      try {
+        const u = new SpeechSynthesisUtterance(text);
+        u.voice = hkVoice; u.lang = hkVoice.lang; u.rate = 1.25; u.pitch = pitch || 1; u.volume = 1;
+        speechSynthesis.speak(u);
+      } catch (e) { /* no speech */ }
+    }
+    function hush() { try { if ('speechSynthesis' in window) speechSynthesis.cancel(); } catch (e) { /* ignore */ } }
+
+    function setMuted(m) {
+      muted = m;
+      try { localStorage.setItem('pzMuted', m ? '1' : '0'); } catch (e) { /* storage blocked */ }
+      if (ac) master.gain.setTargetAtTime(m ? 0 : 0.8, ac.currentTime, 0.02);
+      if (m) hush();
+    }
+
+    return {
+      init, tick, sfx, say, hush, setMuted,
+      isMuted: () => muted,
+      startMusic(fromTop) { if (fromTop) step = 0; nextStep = 0; musicOn = true; },
+      stopMusic() { musicOn = false; },
+    };
+  })();
+
+  // ---------- Analytics (works once a free GoatCounter script is on the page) ----------
+  function track(name) {
+    try {
+      if (window.goatcounter && window.goatcounter.count) {
+        window.goatcounter.count({ path: 'game/' + name, title: name, event: true });
+      }
+    } catch (e) { /* analytics blocked */ }
+  }
+
   // ---------- Game state ----------
   function loadBest() { try { return parseInt(localStorage.getItem('pzBest'), 10) || 0; } catch (e) { return 0; } }
   function saveBest(v) { try { localStorage.setItem('pzBest', String(v)); } catch (e) { /* storage blocked */ } }
@@ -701,6 +884,20 @@
   let targetLane = 1, rowTimer = 0.3, walkPhase = 0, crashT = 0, overT = 0, time = 0;
   let crash = null, msg = '';
   let typhoonT = 0, typhoonK = 0, level = 0, bannerT = 0, bannerText = '';
+  let finalScore = 0, lastLineT = -9, bubble = null, reply = null, share = null;
+
+  // What you say squeezing past someone, with how to say it for expats
+  const PASS_LINES = [
+    { text: '唔該借借！', sub: 'm4 goi1 ze3 ze3 · excuse me' },
+    { text: '唔好意思！', sub: 'm4 hou2 ji3 si1 · sorry' },
+    { text: '借借！', sub: 'ze3 ze3 · coming through' },
+    { text: '唔該晒！', sub: 'm4 goi1 saai3 · thanks!' },
+  ];
+  const REPLY_LINES = [
+    { text: '睇路啦！', sub: 'watch where you\'re going!' },
+    { text: '咩呀你！', sub: 'what\'s your problem?!' },
+    { text: '嘩！', sub: 'whoa!' },
+  ];
 
   function start() {
     peds = peds.filter((p) => p.z > 20);
@@ -708,8 +905,12 @@
     dist = 0; speed = START_SPEED; newBest = false; crash = null;
     typhoonT = 0; typhoonK = 0; flashA = 0; level = 0; bannerT = 0;
     rowTimer = 0.8;
+    bubble = null; reply = null; share = null; lastLineT = -9;
     state = 'playing';
     canvas.style.touchAction = 'none';
+    showActions(false);
+    audio.startMusic(true);
+    track('start');
   }
 
   function spawnRow() {
@@ -734,12 +935,26 @@
   }
 
   function hit(p) {
+    // Picture of the street at the moment of impact (no HUD or bubbles) for the share card
+    let snapshot = null;
+    try {
+      renderWorld();
+      snapshot = document.createElement('canvas');
+      snapshot.width = canvas.width; snapshot.height = canvas.height;
+      snapshot.getContext('2d').drawImage(canvas, 0, 0);
+    } catch (e) { snapshot = null; }
     state = 'crash'; crashT = 0; overT = 0;
     const score = Math.floor(dist);
     newBest = score > best;
     if (newBest) { best = score; saveBest(best); }
     msg = pick(typhoonT > 0 ? TYPHOON_MESSAGES : MESSAGES);
+    finalScore = score;
+    bubble = null; reply = null;
+    audio.stopMusic(); audio.hush(); audio.sfx.crash(); audio.say('哎呀！', 1.2);
+    track('crash');
+    track('distance-' + (score < 100 ? '0-99' : score < 250 ? '100-249' : score < 500 ? '250-499' : score < 1000 ? '500-999' : '1000plus'));
     crash = {
+      snapshot,
       cracks: makeCracks(),
       phone: { x: sx(p.x, p.z), y: sy(1.2 * p.h / 1.7, p.z), vx: rand(-150, 150), vy: -650,
         r: 0, vr: rand(-14, 14), color: p.phone, size: (F / p.z) * 0.1 },
@@ -757,15 +972,18 @@
       speed = Math.min(MAX_SPEED, Math.min(11, START_SPEED + dist * 0.005) + level * MILESTONE_BOOST);
       dist += speed * dt * (typhoonT > 0 ? 2 : 1);   // typhoon = double distance
       const newLevel = Math.floor(dist / MILESTONE);
-      if (newLevel > level) { bannerText = `${newLevel * MILESTONE} m`; bannerT = 1.6; }
+      if (newLevel > level) { bannerText = `${newLevel * MILESTONE} m`; bannerT = 1.6; audio.sfx.doors(); }
 
       if (typhoonT > 0) typhoonT = Math.max(0, typhoonT - dt);
       typhoonK += ((typhoonT > 0 ? 1 : 0) - typhoonK) * (1 - Math.exp(-dt * (typhoonT > 0 ? 5 : 2)));
       if (typhoonK < 0.005) typhoonK = 0;
-      if (typhoonK > 0.6 && Math.random() < dt * 0.45) flashA = rand(0.4, 0.7);   // lightning
+      if (typhoonK > 0.6 && Math.random() < dt * 0.45) { flashA = rand(0.4, 0.7); audio.sfx.thunder(); }   // lightning
     }
     flashA = Math.max(0, flashA - dt * 2.5);
     bannerT = Math.max(0, bannerT - dt);
+    if (bubble && (bubble.t -= dt) <= 0) bubble = null;
+    if (reply && (reply.t -= dt) <= 0) reply = null;
+    audio.tick(speed, typhoonK);
     updateStorm(dt);
     sway = Math.sin(time * 2.3) * 4 * typhoonK;
 
@@ -788,13 +1006,33 @@
       for (const pk of pickups) {
         if (!pk.checked && pk.z <= HIT_Z) {
           pk.checked = true;
-          if (Math.abs(pk.x - camX) < 0.8) { typhoonT = TYPHOON_TIME; flashA = 0.85; pk.z = 0; }
+          if (Math.abs(pk.x - camX) < 0.8) { typhoonT = TYPHOON_TIME; flashA = 0.85; pk.z = 0; audio.sfx.pickup(); track('typhoon'); }
         }
       }
       for (const p of peds) {
         if (!p.checked && p.z <= HIT_Z) {
           p.checked = true;
           if (Math.abs(p.x - camX) < HIT_X) { hit(p); break; }
+        }
+      }
+    }
+    if (state === 'playing') {
+      // Squeezing past someone in the next lane: say excuse me (and maybe get told off)
+      for (const p of peds) {
+        if (p.passed || p.z > 3.2) continue;
+        p.passed = true;
+        const dx = p.x - camX;
+        if (Math.abs(dx) > HIT_X && Math.abs(dx) < 1.9 && time - lastLineT > 2.2 && chance(0.6)) {
+          lastLineT = time;
+          const side = Math.sign(dx) || 1;
+          const line = pick(PASS_LINES);
+          bubble = { ...line, side, t: 1.3 };
+          audio.say(line.text, rand(0.9, 1.15));
+          if (chance(0.35)) {
+            const r = pick(REPLY_LINES);
+            reply = { ...r, side, t: 1.4 };
+            audio.say(r.text, 0.75);
+          }
         }
       }
     }
@@ -807,9 +1045,139 @@
       crashT += dt;
       const ph = crash.phone;
       ph.vy += 1400 * dt; ph.x += ph.vx * dt; ph.y += ph.vy * dt; ph.r += ph.vr * dt;
-      if (crashT > 1.0) state = 'over';
+      if (crashT > 0.9) { state = 'over'; prepareShare(); }
     } else if (state === 'over') {
+      const before = overT;
       overT += dt;
+      if (before < RESTART_DELAY && overT >= RESTART_DELAY) showActions(true);
+    }
+  }
+
+  // ---------- Speech bubbles ----------
+  function drawBubble(b, x, y, tailDown, border) {
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, b.t / 0.25);
+    ctx.font = `900 22px ${CJK}`;
+    const w1 = ctx.measureText(b.text).width;
+    ctx.font = 'bold 10px Arial, sans-serif';
+    const w2 = ctx.measureText(b.sub).width;
+    const w = Math.max(w1, w2) + 22, h = 50;
+    const bx = clamp(x - w / 2, 6, W - w - 6), by = y - h / 2;
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = border; ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(bx, by, w, h, 12); else ctx.rect(bx, by, w, h);
+    ctx.fill(); ctx.stroke();
+    const tx = clamp(x, bx + 16, bx + w - 16);
+    ctx.beginPath();
+    if (tailDown) { ctx.moveTo(tx - 7, by + h - 1); ctx.lineTo(tx, by + h + 10); ctx.lineTo(tx + 7, by + h - 1); }
+    else { ctx.moveTo(tx - 7, by + 1); ctx.lineTo(tx, by - 10); ctx.lineTo(tx + 7, by + 1); }
+    ctx.fill();
+    ctx.fillStyle = '#111';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = `900 22px ${CJK}`;
+    ctx.fillText(b.text, bx + w / 2, by + 19);
+    ctx.fillStyle = '#666';
+    ctx.font = 'bold 10px Arial, sans-serif';
+    ctx.fillText(b.sub, bx + w / 2, by + 39);
+    ctx.restore();
+  }
+
+  function drawBubbles() {
+    if (bubble) drawBubble(bubble, W / 2 + bubble.side * 60, H - 95, true, '#00c8e0');
+    if (reply) drawBubble(reply, reply.side > 0 ? W - 85 : 85, H * 0.5, false, '#ff2a3d');
+  }
+
+  // ---------- Share card ----------
+  const SITE_URL = 'https://piousnomea.github.io';
+
+  function makeShareCard() {
+    const CW = 1080, CH = 1350, k = CW / W, top = (CH - H * k) / 2;
+    const c = document.createElement('canvas');
+    c.width = CW; c.height = CH;
+    const g = c.getContext('2d');
+    g.fillStyle = '#07041a';
+    g.fillRect(0, 0, CW, CH);
+    if (crash.snapshot) g.drawImage(crash.snapshot, 0, top, CW, H * k);
+    const grad = g.createLinearGradient(0, 0, 0, CH);
+    grad.addColorStop(0, 'rgba(30,0,12,0.6)');
+    grad.addColorStop(1, 'rgba(10,0,8,0.93)');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, CW, CH);
+    g.save(); g.translate(0, top); g.scale(k, k); drawCracks(crash.cracks, 0.35, g); g.restore();
+    g.strokeStyle = '#ff2a3d'; g.lineWidth = 10;
+    g.strokeRect(22, 22, CW - 44, CH - 44);
+
+    glowText('撞到了！', CW / 2, 200, `900 150px ${CJK}`, '#ff2a3d', 40, g);
+    const end = wrapText(`"${msg}"`, CW / 2, 410, CW - 170, 76, 'italic bold 60px Georgia, serif', '#ffffff', g);
+    const y = Math.max(end + 150, 720);
+    glowText('I WALKED', CW / 2, y, `32px ${PIXEL}`, '#c9c3d6', 0, g);
+    glowText(`${finalScore} m`, CW / 2, y + 95, `92px ${PIXEL}`, '#00ffff', 30, g);
+    glowText("through Hong Kong's phone zombies", CW / 2, y + 185, 'bold 40px Arial, sans-serif', '#ffffff', 0, g);
+    if (newBest) glowText('NEW PERSONAL BEST!', CW / 2, y + 255, `28px ${PIXEL}`, '#ffe600', 16, g);
+    glowText('低頭族 DASH', CW / 2, CH - 190, `900 66px ${CJK}`, '#ff2a3d', 22, g);
+    glowText('Beat me at piousnomea.github.io', CW / 2, CH - 100, `24px ${PIXEL}`, '#ffe600', 10, g);
+    return c;
+  }
+
+  function shareText() {
+    return `"${msg}" 😂\nI made it ${finalScore} m dodging Hong Kong's phone zombies in 低頭族 DASH. Beat me: ${SITE_URL}`;
+  }
+
+  // The card is built as soon as the game ends, so tapping Share opens the
+  // share sheet straight away (Safari blocks it if we make the image first).
+  function prepareShare() {
+    share = null;
+    try {
+      makeShareCard().toBlob((blob) => {
+        if (!blob) return;
+        let file = null;
+        try { file = new File([blob], `dodge-dash-${finalScore}m.png`, { type: 'image/png' }); } catch (e) { file = null; }
+        share = { blob, file };
+      }, 'image/png');
+    } catch (e) { share = null; }
+  }
+
+  function toast(text) {
+    const el = document.getElementById('pzToast');
+    if (!el) return;
+    el.textContent = text;
+    el.classList.add('show');
+    clearTimeout(toast.timer);
+    toast.timer = setTimeout(() => el.classList.remove('show'), 3200);
+  }
+
+  function doShare() {
+    if (state !== 'over') return;
+    track('share-click');
+    const text = shareText();
+    if (share && share.file && navigator.canShare && navigator.canShare({ files: [share.file] })) {
+      navigator.share({ files: [share.file], text })
+        .then(() => track('share-done'))
+        .catch((e) => { if (e && e.name !== 'AbortError') fallbackShare(text); });
+      return;
+    }
+    if (!share && navigator.share) {   // card not ready: share the words at least
+      navigator.share({ text }).then(() => track('share-done')).catch(() => {});
+      return;
+    }
+    fallbackShare(text);
+  }
+
+  function fallbackShare(text) {
+    track('share-fallback');
+    if (share && share.blob) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(share.blob);
+      a.download = share.file ? share.file.name : 'dodge-dash.png';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    }
+    const done = () => toast('Image saved and message copied. Paste it to a friend who\'ll laugh!');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, () => toast('Image saved. Send it to a friend who\'ll laugh!'));
+    } else {
+      toast('Image saved. Send it to a friend who\'ll laugh!');
     }
   }
 
@@ -886,11 +1254,11 @@
     glowText(`${Math.floor(dist)} m`, W / 2, 310, `24px ${PIXEL}`, '#00ffff', 12);
     glowText(`BEST ${best} m`, W / 2, 348, `11px ${PIXEL}`, '#ffe600', 6);
     if (newBest && blink()) glowText('NEW BEST!', W / 2, 382, `14px ${PIXEL}`, '#ffe600', 12);
-    if (overT > 0.6 && blink()) glowText('TAP TO TRY AGAIN', W / 2, H - 60, `12px ${PIXEL}`, '#ffffff', 8);
+    if (overT > RESTART_DELAY) glowText('SPACE = AGAIN  ·  S = SHARE', W / 2, H - 14, `7px ${PIXEL}`, '#8f86a6', 0);
     ctx.restore();
   }
 
-  function render() {
+  function renderWorld() {
     ctx.save();
     if (state === 'crash') {
       const sh = Math.max(0, 1 - crashT * 1.4) * 12;
@@ -906,7 +1274,10 @@
       .forEach((o) => (o.isPickup ? drawPickup(o) : drawPed(o)));
     ctx.restore();
     drawStorm();
+  }
 
+  function render() {
+    renderWorld();
     if (state === 'crash') {
       ctx.fillStyle = `rgba(255,255,255,${Math.max(0, 0.85 - crashT * 3)})`;
       ctx.fillRect(0, 0, W, H);
@@ -917,7 +1288,7 @@
     }
 
     if (state === 'playing' || state === 'crash' || state === 'paused') drawHUD();
-    if (state === 'playing') drawBanners();
+    if (state === 'playing') { drawBubbles(); drawBanners(); }
     if (state === 'ready') drawReady();
     else if (state === 'paused') drawPaused();
     else if (state === 'over') drawOver();
@@ -940,7 +1311,7 @@
   }
 
   function pause() {
-    if (state === 'playing') { state = 'paused'; canvas.style.touchAction = ''; render(); }
+    if (state === 'playing') { state = 'paused'; canvas.style.touchAction = ''; audio.stopMusic(); audio.hush(); render(); }
   }
 
   function fit() {
@@ -955,18 +1326,62 @@
 
   // ---------- Input ----------
   function press(dir) {
+    audio.init();   // browsers only allow sound after a tap or key press
     if (state === 'playing') {
-      if (dir) targetLane = clamp(targetLane + dir, 0, LANES - 1);
+      const next = clamp(targetLane + (dir || 0), 0, LANES - 1);
+      if (next !== targetLane) {
+        targetLane = next;
+        audio.sfx.lane();
+        try { if (navigator.vibrate) navigator.vibrate(8); } catch (e) { /* not supported */ }
+      }
       return;
     }
-    if (state === 'paused') { state = 'playing'; canvas.style.touchAction = 'none'; kick(); return; }
+    if (state === 'paused') { state = 'playing'; canvas.style.touchAction = 'none'; audio.startMusic(false); kick(); return; }
     if (state === 'crash') return;
-    if (state === 'over' && overT < 0.6) return;   // stops frantic taps restarting instantly
+    if (state === 'over' && overT < RESTART_DELAY) return;   // stops frantic taps restarting instantly
     start();
     kick();
   }
 
+  // ---------- Buttons under / over the game ----------
+  const actionsEl = document.getElementById('pzActions');
+  const soundBtn = document.getElementById('pzSound');
+
+  function showActions(show) {
+    if (actionsEl) actionsEl.hidden = !show;
+  }
+
+  function refreshSoundBtn() {
+    if (!soundBtn) return;
+    const m = audio.isMuted();
+    soundBtn.textContent = m ? '🔇 Sound off' : '🔊 Sound on';
+    soundBtn.setAttribute('aria-pressed', String(m));
+  }
+
+  function toggleSound() {
+    audio.init();
+    audio.setMuted(!audio.isMuted());
+    refreshSoundBtn();
+    track(audio.isMuted() ? 'mute' : 'unmute');
+  }
+
+  const shareBtn = document.getElementById('pzShare');
+  const againBtn = document.getElementById('pzAgain');
+  if (shareBtn) shareBtn.addEventListener('click', doShare);
+  if (againBtn) againBtn.addEventListener('click', () => { press(0); try { canvas.focus({ preventScroll: true }); } catch (e) { /* ignore */ } });
+  if (soundBtn) soundBtn.addEventListener('click', toggleSound);
+  refreshSoundBtn();
+
   window.addEventListener('keydown', (e) => {
+    const typing = e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName);
+    if (!typing && (e.key === 'm' || e.key === 'M') && (state === 'playing' || document.activeElement === canvas)) {
+      toggleSound();
+      return;
+    }
+    if ((e.key === 's' || e.key === 'S') && state === 'over' && document.activeElement === canvas) {
+      doShare();
+      return;
+    }
     let dir = null;
     if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') dir = -1;
     else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') dir = 1;
@@ -978,6 +1393,8 @@
     e.preventDefault();
     press(dir);
   });
+
+  canvas.addEventListener('contextmenu', (e) => e.preventDefault());   // no long-press menu on phones
 
   canvas.addEventListener('pointerdown', (e) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
