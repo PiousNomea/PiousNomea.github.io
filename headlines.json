@@ -1,13 +1,25 @@
 {
   "source": "Dimsum Daily",
   "source_url": "https://www.dimsumdaily.hk",
-  "updated": "2026-11-20T21:57:47+00:00",
+  "updated": "2026-11-21T01:23:17+00:00",
   "via": "from_google_news",
   "items": [
+    {
+      "title": "Grand Theft Auto VI launch triggers record sales and workplace time off",
+      "link": "https://news.google.com/rss/articles/CBMioAFBVV95cUxQTVNUekMyc25aR1dYNkkwTU0zZUF6Mnh3Y3QzUXNSNXdoSk13SUdBcmUyZnlHam9VZkxfYTkwTFdBVlphdFRnUkVxMDl2aUQwRWRxUG8tZmptcWNUVUtfT093V2hUT2pEalpMcVRvc2dlOWI5bFdNWUV2TVdtNjE1RDJJQlZPUURiM3o5U2JhRkhCRnBFcUFjcFMxLUpfWGx1?oc=5",
+      "date": "2026-11-20T21:11:32+00:00",
+      "summary": ""
+    },
     {
       "title": "Washington toppled its own chip king, Beijing simply had to wait",
       "link": "https://news.google.com/rss/articles/CBMilgFBVV95cUxQNXVWWVFmdkgwTnl6Q29GLVNWanBVRjRyQThLUUFtbkF4TGtzdHh0QkExNDVZNmJlbVZzbDlGd2lCWXFZckc0c3M0bDNXeVJnd3M5RnNleTN0WVlIWTlOS1NZcVNHRHFGbXRGVFpTQmNQcHZqQmlOaFlybEJCTGNWY3J2Rm1uWHQ2YjZfWGFzbl9RT2tlWFE?oc=5",
       "date": "2026-11-20T20:05:34+00:00",
+      "summary": ""
+    },
+    {
+      "title": "Hong Kong Customs shuts down drug manufacturing and repacking centres worth HK$1.6 million",
+      "link": "https://news.google.com/rss/articles/CBMixAFBVV95cUxNS0pCcThOaW5mYTFkZC1VYjM5QTZiaDJvQmJYc0o3WUJkZGMwa29tZm9CVGFkc3RndUVPTHNwUmtmVnh5WjJTa0t2c2NfVGZxNmtXd253ZUdyQjVDMUVqMUsyazdIUGgzbHotN0dGckpzb0MwWTR0STQ3QXoxb0FNV0hqQ212ZU1COGd2dkZuUExrRUVDQ194WTlNNVRQSU15eEotR2dwTy1ZNWluM2NNcU9GUTZsajBUTUR5TE1aQTU1clhr?oc=5",
+      "date": "2026-11-20T19:51:43+00:00",
       "summary": ""
     },
     {
@@ -19,31 +31,13 @@
     {
       "title": "Jensen Huang tipped to raise US$50 billion for new semiconductor venture after Nvidia exit",
       "link": "https://news.google.com/rss/articles/CBMiuAFBVV95cUxObXJYcVA0ZmRRMnZuZG10QWMxak9kdllQdmhxaEpTa3U5MmFRLWFPeEdhZ0hkMVB6d0QyTHpydEtvdU5DNnBTWHBzRE9HLWlGRUhLMllHQktLUG1scTRMdERyVldwek1abnZmWUg4eUpfX05NXzVib1ZiakFveW5DTzJYdDBfWmpwYmhESTVZOGJlYkdwZ1htOHJIdHd0c1QxWHVFVDRNQ0xXY1RyTEVoZ3FVZmNDdlN4?oc=5",
-      "date": "2026-11-20T19:15:48+00:00",
-      "summary": ""
-    },
-    {
-      "title": "Grand Theft Auto VI launch triggers record sales and workplace time off",
-      "link": "https://news.google.com/rss/articles/CBMioAFBVV95cUxQTVNUekMyc25aR1dYNkkwTU0zZUF6Mnh3Y3QzUXNSNXdoSk13SUdBcmUyZnlHam9VZkxfYTkwTFdBVlphdFRnUkVxMDl2aUQwRWRxUG8tZmptcWNUVUtfT093V2hUT2pEalpMcVRvc2dlOWI5bFdNWUV2TVdtNjE1RDJJQlZPUURiM3o5U2JhRkhCRnBFcUFjcFMxLUpfWGx1?oc=5",
-      "date": "2026-11-20T19:15:01+00:00",
-      "summary": ""
-    },
-    {
-      "title": "Hong Kong Customs shuts down drug manufacturing and repacking centres worth HK$1.6 million",
-      "link": "https://news.google.com/rss/articles/CBMixAFBVV95cUxNS0pCcThOaW5mYTFkZC1VYjM5QTZiaDJvQmJYc0o3WUJkZGMwa29tZm9CVGFkc3RndUVPTHNwUmtmVnh5WjJTa0t2c2NfVGZxNmtXd253ZUdyQjVDMUVqMUsyazdIUGgzbHotN0dGckpzb0MwWTR0STQ3QXoxb0FNV0hqQ212ZU1COGd2dkZuUExrRUVDQ194WTlNNVRQSU15eEotR2dwTy1ZNWluM2NNcU9GUTZsajBUTUR5TE1aQTU1clhr?oc=5",
-      "date": "2026-11-20T17:54:43+00:00",
+      "date": "2026-11-20T19:29:23+00:00",
       "summary": ""
     },
     {
       "title": "TSMC and Samsung suspend certain chip deliveries to Chinese customers under new US export rules",
       "link": "https://news.google.com/rss/articles/CBMizAFBVV95cUxPS3BfVGNpMUpJeWUzdWNsZTUyejdDVlpDYzNqang2dGhyWW8yc2NjeTU5bjY5WlJwdnR3ck5yRHZST3VyOEFpUGVfLUdIaXU3dWFBN3oxbVFoOElQeFlDdXZBZ0xUblJoR2xPYnhMY0JkeWRRRzV4RkMtc1Z4TWdsSzc2WWVwT3JMQ1ZkTkZXM0tRQm9JNDNXalBhSjVEVjRSem1TLTlzcERrNmZfMmg2N09ocjlPdE5jRnZKWS1IcUduYkhuYUhNWmtxUzg?oc=5",
       "date": "2026-11-20T17:29:34+00:00",
-      "summary": ""
-    },
-    {
-      "title": "Eric Chan says lawful memorials for Wang Fuk Court fire are permitted￼",
-      "link": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxNRmxianFhclU2NURxMmZlY2dTUTFWWGtkcVVMUll3WXQ1YzVBUWUyUGhnQW8yUU9BMXFCUU1nVnN5R3NvS2Q2WEV5YUZ3ZjdtR1FsOFNqU1Jnd0ZpbGVVUzhzWEt1WFlBYXlvV2JUTUdTRWVkcWFGclhFYWRRZHY5OVMtMHU3aDFYTlBtS2g0N1dUZFhWSmItaXY3SFcwWmVCTE5mT3BjMmI3Zw?oc=5",
-      "date": "2026-11-20T17:19:21+00:00",
       "summary": ""
     },
     {
@@ -62,6 +56,12 @@
       "title": "Hong Kong secondary home price index falls for sixth straight week to six-month low",
       "link": "https://news.google.com/rss/articles/CBMisAFBVV95cUxQQWloY3VrNzFYM291SnU5dXQydTU5bjNnT1hrT1dldlhlc25kbFpJZVlmazlmM3JvOXFBeUtxT2RjVzNNck9CcGkxM0lfWU8tZXJjYmh2NWJYV3VFOTgtb3B4MVRSZWFHcjlkbUgxSXdESVZpYW5FTjg2ZDJWYkR0WFhBLXVJWXNXZV8zbXR4NDVTNEhSRDVhY0l3VnQ4enA0QllJZXRxZUplVEYyYnlEZw?oc=5",
       "date": "2026-11-20T16:38:46+00:00",
+      "summary": ""
+    },
+    {
+      "title": "Hong Kong public housing composite waiting time drops to 10-year low of 4.4 years",
+      "link": "https://news.google.com/rss/articles/CBMirgFBVV95cUxNcjBGVGpLRUR5U05YbUx2dzd2WUdITWFSRG9ndkpHNjQtRlN3V1ZwNDEycmNqNGh5SW1TUjYwcV94UVUwU21JN0JIN0wxWU1weWNTZ0RranlrcTJJVmk3MTl2RFU5bHE0N2ZrMjF6OVhyZnpadzU3dkp0UFI2SG83UzZRRldSaEUxYTgyS1NYNzFJUm1PSTFNbVBjcUxqeHIwbHJWdDJiZGJuM09SS3c?oc=5",
+      "date": "2026-11-20T15:57:06+00:00",
       "summary": ""
     }
   ]
