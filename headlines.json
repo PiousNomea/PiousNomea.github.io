@@ -1,9 +1,39 @@
 {
   "source": "Dimsum Daily",
   "source_url": "https://www.dimsumdaily.hk",
-  "updated": "2026-11-21T01:23:17+00:00",
+  "updated": "2026-11-21T04:00:29+00:00",
   "via": "from_google_news",
   "items": [
+    {
+      "title": "Trump and Xi Jinping agree on human oversight for military AI",
+      "link": "https://news.google.com/rss/articles/CBMikwFBVV95cUxOM0UtTGNWM3ZTaDdsY0JMb3RSQnM1MTFaekR1eU03eDg5b0NjeUpBRnZ1ZnRWQ0JTaTJRcXgyOElmaFJ1bEVCeXJGX1NBU3U3aU1QU2hzYWJSZHFrb2lJRmR2UTRlVUhRRzV1TTU1N1htQ2F2bUlTUmJac3FpeDFfNWQyWkNZZUF0a1hpQzZIMzk1SHc?oc=5",
+      "date": "2026-11-21T03:33:43+00:00",
+      "summary": ""
+    },
+    {
+      "title": "Nvidia extends US$2.7 trillion stock rout as SEC probes accounting practices",
+      "link": "https://news.google.com/rss/articles/CBMipgFBVV95cUxONFRDQUFTaTV6WXotLXZidmNJWlE1Smx3bG4wc0M2Mmh3ZVpMOEp2QUEtdE5LTElGLVBHMURyWnBWdjgydWRpLUxzcDZDcmtKZk9ybnpTZDdaQnNUVG5qMWp5dGJjRWNSX0JWMnhtSWQ1WHlmaGxaTmVnSWNTcXRlc3ZUUWo2N2hEaTBHdENXOVBQQmczRGJxU3YyTzk1MzllaHVHMEdB?oc=5",
+      "date": "2026-11-21T02:27:23+00:00",
+      "summary": ""
+    },
+    {
+      "title": "XRP supply tightness on Binance exceeds July levels as spot ETF drought persists",
+      "link": "https://news.google.com/rss/articles/CBMirAFBVV95cUxOQmxBVTllWFdXeWxYSEhaZE9INkRrODY1YlAxUGRiRFRhOTFkYTBHcDBtSkIzemtJMUxBbGtwcjRhQnAtdUdwY09sWkhwcE82eXRaTDFtelgycm5PdS0wbGlMRkZYN1VkS0R6U3V1OWljZ2xiQVgtQ1RGMGRWOVVMREI0TDRsS2dHdnVRNExBR0RRVEdWR3F1a2ZJTlc1WU1fcEVoWHVxS3hkRVJ5?oc=5",
+      "date": "2026-11-20T22:01:49+00:00",
+      "summary": ""
+    },
+    {
+      "title": "Washington toppled its own chip king, Beijing simply had to wait",
+      "link": "https://news.google.com/rss/articles/CBMilgFBVV95cUxQNXVWWVFmdkgwTnl6Q29GLVNWanBVRjRyQThLUUFtbkF4TGtzdHh0QkExNDVZNmJlbVZzbDlGd2lCWXFZckc0c3M0bDNXeVJnd3M5RnNleTN0WVlIWTlOS1NZcVNHRHFGbXRGVFpTQmNQcHZqQmlOaFlybEJCTGNWY3J2Rm1uWHQ2YjZfWGFzbl9RT2tlWFE?oc=5",
+      "date": "2026-11-20T21:59:50+00:00",
+      "summary": ""
+    },
+    {
+      "title": "Water bursts at Saddle Ridge Garden hit 4,200 households in Ma On Shan￼",
+      "link": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxNaWtKemtmNGVDVE9Ba3J6Nklpc1N6OUlZczdBU0R6MlJ3YnBVX05KMTFsYWlFR0JyOUEtcC1qSnBmSHNad21nU1pPdmRfVUF2dTFSTUZNMGtLZlhTZlVDR09ZUlRwMmx4NUgwUTRLdTY1QUZWU2NrdTY3QmFHeHdzQWVIU01iTnFTR194dDQyT2ZpWF9kOVJmVVp3UW5DVFBYM1BuRUZWbzJ3Zw?oc=5",
+      "date": "2026-11-20T21:26:13+00:00",
+      "summary": ""
+    },
     {
       "title": "Grand Theft Auto VI launch triggers record sales and workplace time off",
       "link": "https://news.google.com/rss/articles/CBMioAFBVV95cUxQTVNUekMyc25aR1dYNkkwTU0zZUF6Mnh3Y3QzUXNSNXdoSk13SUdBcmUyZnlHam9VZkxfYTkwTFdBVlphdFRnUkVxMDl2aUQwRWRxUG8tZmptcWNUVUtfT093V2hUT2pEalpMcVRvc2dlOWI5bFdNWUV2TVdtNjE1RDJJQlZPUURiM3o5U2JhRkhCRnBFcUFjcFMxLUpfWGx1?oc=5",
@@ -11,21 +41,9 @@
       "summary": ""
     },
     {
-      "title": "Washington toppled its own chip king, Beijing simply had to wait",
-      "link": "https://news.google.com/rss/articles/CBMilgFBVV95cUxQNXVWWVFmdkgwTnl6Q29GLVNWanBVRjRyQThLUUFtbkF4TGtzdHh0QkExNDVZNmJlbVZzbDlGd2lCWXFZckc0c3M0bDNXeVJnd3M5RnNleTN0WVlIWTlOS1NZcVNHRHFGbXRGVFpTQmNQcHZqQmlOaFlybEJCTGNWY3J2Rm1uWHQ2YjZfWGFzbl9RT2tlWFE?oc=5",
-      "date": "2026-11-20T20:05:34+00:00",
-      "summary": ""
-    },
-    {
       "title": "Hong Kong Customs shuts down drug manufacturing and repacking centres worth HK$1.6 million",
       "link": "https://news.google.com/rss/articles/CBMixAFBVV95cUxNS0pCcThOaW5mYTFkZC1VYjM5QTZiaDJvQmJYc0o3WUJkZGMwa29tZm9CVGFkc3RndUVPTHNwUmtmVnh5WjJTa0t2c2NfVGZxNmtXd253ZUdyQjVDMUVqMUsyazdIUGgzbHotN0dGckpzb0MwWTR0STQ3QXoxb0FNV0hqQ212ZU1COGd2dkZuUExrRUVDQ194WTlNNVRQSU15eEotR2dwTy1ZNWluM2NNcU9GUTZsajBUTUR5TE1aQTU1clhr?oc=5",
       "date": "2026-11-20T19:51:43+00:00",
-      "summary": ""
-    },
-    {
-      "title": "Water bursts at Saddle Ridge Garden hit 4,200 households in Ma On Shan￼",
-      "link": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxNaWtKemtmNGVDVE9Ba3J6Nklpc1N6OUlZczdBU0R6MlJ3YnBVX05KMTFsYWlFR0JyOUEtcC1qSnBmSHNad21nU1pPdmRfVUF2dTFSTUZNMGtLZlhTZlVDR09ZUlRwMmx4NUgwUTRLdTY1QUZWU2NrdTY3QmFHeHdzQWVIU01iTnFTR194dDQyT2ZpWF9kOVJmVVp3UW5DVFBYM1BuRUZWbzJ3Zw?oc=5",
-      "date": "2026-11-20T19:30:13+00:00",
       "summary": ""
     },
     {
@@ -44,24 +62,6 @@
       "title": "Sun Hung Kai Properties appoints Regina Ip as independent non-executive director￼",
       "link": "https://news.google.com/rss/articles/CBMiuAFBVV95cUxPVjVkc3NmQTNUdm9VX2FidEM3ZVhwQWtzMU1XMDFRdzhrVk5VT1k1ZDROaTZpTjJOVzI4WjE1blVsa1lhVV8yUDVsSHhwQW9OV0JrRHE5RzdmLVZIVmZuYVdUTjM2bkk5TmpwNks2TC1uR1NjVUU5VnpjZ09uTnJwOUhxTmxtREkyUDE5azJZeEp0SkU0V3FNbEh6dkhudHBST1ZFaG9nN3lBWXdHVkoxbjB6enlGQjZZ?oc=5",
       "date": "2026-11-20T17:13:51+00:00",
-      "summary": ""
-    },
-    {
-      "title": "Cybersecurity expert urges penalties in Hong Kong after 12 data breaches in six weeks￼",
-      "link": "https://news.google.com/rss/articles/CBMivwFBVV95cUxPc0prekdjREE5UDNzM3ROUHM5VW13TkhiQnQwNGRGM0ItV3BCMzFqeGNzQWI1YVNnejM3R1hBMHR1OFMtTlA3WmpUT1JMaXpvMFhZc3MtTVVLNFRXcFpVT1ZxV2lTWU1yTkozYTJURFk3Y0kyckZhaUtlZWVjYzZadjY1YTNkR09rTjdLYXpXNUVKb1lRR3B6NDI1d2daNVVOVzFkY3cxTWEyWHpzNHpfNU93VlJPZXRjYWJwVHNwbw?oc=5",
-      "date": "2026-11-20T16:56:09+00:00",
-      "summary": ""
-    },
-    {
-      "title": "Hong Kong secondary home price index falls for sixth straight week to six-month low",
-      "link": "https://news.google.com/rss/articles/CBMisAFBVV95cUxQQWloY3VrNzFYM291SnU5dXQydTU5bjNnT1hrT1dldlhlc25kbFpJZVlmazlmM3JvOXFBeUtxT2RjVzNNck9CcGkxM0lfWU8tZXJjYmh2NWJYV3VFOTgtb3B4MVRSZWFHcjlkbUgxSXdESVZpYW5FTjg2ZDJWYkR0WFhBLXVJWXNXZV8zbXR4NDVTNEhSRDVhY0l3VnQ4enA0QllJZXRxZUplVEYyYnlEZw?oc=5",
-      "date": "2026-11-20T16:38:46+00:00",
-      "summary": ""
-    },
-    {
-      "title": "Hong Kong public housing composite waiting time drops to 10-year low of 4.4 years",
-      "link": "https://news.google.com/rss/articles/CBMirgFBVV95cUxNcjBGVGpLRUR5U05YbUx2dzd2WUdITWFSRG9ndkpHNjQtRlN3V1ZwNDEycmNqNGh5SW1TUjYwcV94UVUwU21JN0JIN0wxWU1weWNTZ0RranlrcTJJVmk3MTl2RFU5bHE0N2ZrMjF6OVhyZnpadzU3dkp0UFI2SG83UzZRRldSaEUxYTgyS1NYNzFJUm1PSTFNbVBjcUxqeHIwbHJWdDJiZGJuM09SS3c?oc=5",
-      "date": "2026-11-20T15:57:06+00:00",
       "summary": ""
     }
   ]
